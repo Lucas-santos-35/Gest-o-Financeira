@@ -14,45 +14,16 @@
         
         /* 2. Cabeçalho e Navegação */
         header { background-color: #1a237e; color: white; padding: 20px 0; text-align: center; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); }
-        nav {
-            display: flex;
-            justify-content: center;
-            background-color: #ffffff;
-            border-bottom: 1px solid #e0eeef;
+        nav { display: flex; justify-content: center; background-color: #ffffff; border-bottom: 1px solid #e0eeef; }
+        nav button { 
+            flex-grow: 1; border: none; border-right: 1px solid #f0f0f0; padding: 10px 10px; 
+            cursor: pointer; font-size: 14px; font-weight: 600; color: #6c757d; 
+            transition: color 0.3s, background-color 0.3s; max-width: 150px;
         }
-        
-        /* NOVO ESTILO: Botões de Navegação Menores */
-        nav button {
-            /* flex-grow: 1; Removido para controle maior no desktop, mas mantido em mobile */
-            background: none;
-            border: none;
-            border-right: 1px solid #f0f0f0;
-            padding: 10px 10px; /* Reduzido de 15px 5px para 10px 10px (mais compacto) */
-            cursor: pointer;
-            font-size: 14px; /* Mantido pequeno */
-            font-weight: 600;
-            color: #6c757d;
-            transition: color 0.3s, background-color 0.3s;
-            max-width: 150px; /* Limita largura máxima em telas grandes */
-        }
-        @media (max-width: 500px) {
-            nav button {
-                flex-grow: 1; /* Volta a crescer em mobile para ocupar todo o espaço */
-                padding: 12px 5px; 
-            }
-        }
-        
-        nav button:last-child {
-            border-right: none;
-        }
-        nav button:hover {
-            color: #1a237e;
-            background-color: #f5f5f5;
-        }
-        nav button.active {
-            color: #1a237e;
-            border-bottom: 3px solid #1a237e;
-        }
+        @media (max-width: 500px) { nav button { flex-grow: 1; padding: 12px 5px; } }
+        nav button:last-child { border-right: none; }
+        nav button:hover { color: #1a237e; background-color: #f5f5f5; }
+        nav button.active { color: #1a237e; border-bottom: 3px solid #1a237e; }
 
         /* 3. Container Principal e Abas */
         .container { padding: 20px; max-width: 900px; margin: 0 auto; }
@@ -244,7 +215,7 @@
 
             const quantidade = parseInt(qtdEl.value);
             const valorTotal = quantidade * VALOR_ENTREGA;
-            let nomeCliente = clienteEl.value.trim() || 'N/A'; // Define 'N/A' se o campo estiver vazio
+            let nomeCliente = clienteEl.value.trim() || 'N/A'; 
 
             let entregas = carregarDados(KEY_ENTREGAS);
 
@@ -538,6 +509,7 @@ Status: ${statusText}
         // 🛠️ Registro do Service Worker (Para PWA)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
+                // AQUI GARANTIMOS QUE O CAMINHO ESTÁ CORRETO
                 navigator.serviceWorker.register('/sw.js')
                     .then(reg => {
                         console.log('Service Worker registrado com sucesso:', reg.scope);
