@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão Financeira PWA</title>
+    
+    <link rel="manifest" href="manifest.json">
+    
+    <style>
+        /* 1. Reset Básico e Fontes */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fcfcfc; color: #333; }
+        
+        /* 2. Cabeçalho e Navegação */
+        header { background-color: #1a237e; color: white; padding: 20px 0; text-align: center; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); }
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e0eeef;
+        }
+        
+        /* NOVO ESTILO: Botões de Navegação Menores */
+        nav button {
+            /* flex-grow: 1; Removido para controle maior no desktop, mas mantido em mobile */
+            background: none;
+            border: none;
+            border-right: 1px solid #f0f0f0;
+            padding: 10px 10px; /* Reduzido de 15px 5px para 10px 10px (mais compacto) */
+            cursor: pointer;
+            font-size: 14px; /* Mantido pequeno */
+            font-weight: 600;
+            color: #6c757d;
+            transition: color 0.3s, background-color 0.3s;
+            max-width: 150px; /* Limita largura máxima em telas grandes */
+        }
+        @media (max-width: 500px) {
+            nav button {
+                flex-grow: 1; /* Volta a crescer em mobile para ocupar todo o espaço */
+                padding: 12px 5px; 
+            }
+        }
+        
+        nav button:last-child {
+            border-right: none;
+        }
+        nav button:hover {
+            color: #1a237e;
+            background-color: #f5f5f5;
+        }
+        nav button.active {
+            color: #1a237e;
+            border-bottom: 3px solid #1a237e;
+        }
+
+        /* 3. Container Principal e Abas */
+        .container { padding: 20px; max-width: 900px; margin: 0 auto; }
+        .tab-content { display: none; padding: 20px 0; }
+        .tab-content.active { display: block; }
+        
+        /* 4. Estilo de Card e Formulário */
+        .card { background-color: white; padding: 25px; margin-bottom: 25px; border-radius: 6px; border: 1px solid #e0e0e0; box-shadow: none; }
+        h2 { color: #1a237e; margin-bottom: 15px; font-size: 1.6em; font-weight: 500; }
+
+        /* Estilo Histórico Toggle */
+        .history-toggle-btn { display: flex; justify-content: space-between; align-items: center; width: 100%; background-color: #f8f8f8; border: 1px solid #e0e0e0; padding: 12px 15px; margin-bottom: 0px; cursor: pointer; font-size: 1.1em; font-weight: 600; color: #555; border-radius: 4px; transition: background-color 0.2s; }
+        .history-toggle-btn:hover { background-color: #eee; }
+        .history-toggle-btn .arrow { transition: transform 0.3s; font-size: 0.8em; }
+        .history-toggle-btn.active .arrow { transform: rotate(90deg); }
+
+        /* Container da Lista Ocultável */
+        .item-list-container { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; padding-top: 0; }
+        .item-list-container.show { max-height: 5000px; padding-top: 10px; }
+        
+        /* Campos de Formulário */
+        input[type="date"], input[type="number"], input[type="text"] { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; transition: border-color 0.3s; }
+        input:focus { border-color: #1a237e; box-shadow: 0 0 0 1px #1a237e; outline: none; }
+        
+        /* Botões de Ação */
+        button { width: 100%; padding: 12px; margin-bottom: 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: 600; transition: background-color 0.3s; }
+        .register-btn { background-color: #4CAF50; color: white; }
+        .register-btn:hover { background-color: #45a049; }
+        #tab-pix .register-btn { background-color: #ffb300; color: #333; }
+        #tab-pix .register-btn:hover { background-color: #fb8c00; }
+        #btn-copy-report { background-color: #607d8b; color: white; }
+        #btn-copy-report:hover { background-color: #546e7a; }
+
+
+        /* Estilo da Lista e Botões CRUD */
+        .item-list div { padding: 10px; border-bottom: 1px solid #eee; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; align-items: center; }
+        .item-list div:nth-child(even) { background-color: #fcfcfc; }
+        .item-data { font-size: 0.9em; color: #555; }
+        .valor { font-weight: 700; color: #4CAF50; text-align: right; }
+        .valor.pix { color: #ffb300; }
+        .item-actions { display: flex; gap: 5px; justify-content: flex-end; }
+        .item-actions button { width: auto; padding: 5px 8px; font-size: 0.8em; font-weight: normal; margin: 0; min-width: 60px; border-radius: 3px; }
+        .btn-edit { background-color: #1a237e; color: white; }
+        .btn-delete { background-color: #D32F2F; color: white; }
+        .btn-edit:hover { background-color: #2c387e; }
+        .btn-delete:hover { background-color: #a02020; }
+
+        /* Layout de Formulário em Grid */
+        .form-grid { display: grid; gap: 10px; grid-template-columns: 1fr; }
+        @media (min-width: 768px) {
+            .form-grid.entregas { grid-template-columns: 1fr 1.5fr 1fr; }
+            .form-grid.pix { grid-template-columns: 1fr 1.5fr 1fr; }
+            .form-grid button { grid-column: 1 / span 3; }
+            .form-grid input { margin-bottom: 0; }
+        }
+        
+        /* Estilos do Relatório */
+        .report-summary { padding: 25px; margin-top: 15px; border: 1px solid #1a237e; border-radius: 6px; background-color: #e8eaf6; }
+        .report-summary p { margin: 10px 0; font-size: 1.1em; display: flex; justify-content: space-between; }
+        .report-summary p strong { font-weight: 600; }
+        .text-red { color: #D32F2F; } 
+        .text-green { color: #4CAF50; } 
+        .text-blue { color: #1a237e; } 
+        .final-diff { padding-top: 15px; border-top: 1px dashed #aab; margin-top: 15px; font-size: 1.3em !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>💵 Gestão Financeira</h1>
+    </header>
+
+    <nav>
+        <button id="tab-entregas-btn" class="active">📦 Entregas</button>
+        <button id="tab-pix-btn">💰 PIX Recebidos</button>
+        <button id="tab-relatorio-btn">📊 Relatório</button>
+    </nav>
+
+    <div class="container">
+        
+        <div id="tab-entregas" class="tab-content active">
+            <div class="card">
+                <h2>Registro de Entregas</h2>
+                <div class="form-grid entregas">
+                    <input type="date" id="entrega-data" required title="Data da Entrega">
+                    <input type="text" id="entrega-cliente" placeholder="Nome do Cliente (Opcional)" title="Nome do Cliente">
+                    <input type="number" id="entrega-quantidade" placeholder="Qtd. Entregas" min="1" required title="Quantidade de Entregas">
+                    <button id="entrega-submit-btn" class="register-btn" onclick="adicionarEntrega()">Registrar</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <button class="history-toggle-btn" id="toggle-entregas" onclick="toggleHistory('entregas')">
+                    Histórico de Entregas 
+                    <span class="arrow">▶</span>
+                </button>
+                <div id="entregas-list-container" class="item-list-container">
+                    <div id="entregas-list" class="item-list">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-pix" class="tab-content">
+            <div class="card">
+                <h2>Registro de PIX Recebidos</h2>
+                <div class="form-grid pix">
+                    <input type="date" id="pix-data" required title="Data do PIX">
+                    <input type="text" id="pix-pagador" placeholder="Nome do Pagador" required title="Nome da pessoa que fez o PIX">
+                    <input type="number" id="pix-valor" placeholder="Valor Recebido (R$)" min="0.01" step="0.01" required title="Valor Recebido via PIX">
+                    <button id="pix-submit-btn" class="register-btn" onclick="adicionarPix()">Adicionar PIX</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <button class="history-toggle-btn" id="toggle-pix" onclick="toggleHistory('pix')">
+                    Histórico de PIX Recebidos 
+                    <span class="arrow">▶</span>
+                </button>
+                <div id="pix-list-container" class="item-list-container">
+                    <div id="pix-list" class="item-list">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-relatorio" class="tab-content">
+            <div class="card">
+                <h2>Comparativo Financeiro</h2>
+                
+                <div id="report-output" class="report-summary">
+                    <p style="text-align: center; color: #555;">Clique no botão Relatório para visualizar o balanço.</p>
+                </div>
+                
+                <button id="btn-copy-report" onclick="copiarRelatorio()">Copiar Relatório</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Constantes e Variáveis Globais ---
+        const VALOR_ENTREGA = 20.00;
+        const KEY_ENTREGAS = 'financas_entregas';
+        const KEY_PIX = 'financas_pix';
+        let itemEmEdicaoEntrega = null; 
+        let itemEmEdicaoPix = null;
+
+        // --- Funções de Utilitários ---
+        function carregarDados(key) {
+            const data = localStorage.getItem(key);
+            if (!data) return []; 
+            try { return JSON.parse(data); } catch (e) { return []; }
+        }
+        function salvarDados(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+        function formatarMoeda(valor) {
+            return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+        function formatarData(dataString) {
+            const data = new Date(dataString + 'T00:00:00'); 
+            return data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+        
+        // --- Lógica de Toggle do Histórico ---
+        function toggleHistory(type) {
+            const container = document.getElementById(`${type}-list-container`);
+            const button = document.querySelector(`#toggle-${type}`);
+            
+            container.classList.toggle('show');
+            button.classList.toggle('active');
+        }
+
+        // =======================================================
+        // ========== LÓGICA CRUD - ENTREGAS =====================
+        // =======================================================
+
+        function adicionarEntrega() {
+            const dataEl = document.getElementById('entrega-data');
+            const clienteEl = document.getElementById('entrega-cliente');
+            const qtdEl = document.getElementById('entrega-quantidade');
+            const submitBtn = document.getElementById('entrega-submit-btn');
+
+            if (!dataEl.value || !qtdEl.value || parseInt(qtdEl.value) < 1) {
+                alert("A data e a quantidade de entregas (mínimo 1) são obrigatórias.");
+                return;
+            }
+
+            const quantidade = parseInt(qtdEl.value);
+            const valorTotal = quantidade * VALOR_ENTREGA;
+            let nomeCliente = clienteEl.value.trim() || 'N/A'; // Define 'N/A' se o campo estiver vazio
+
+            let entregas = carregarDados(KEY_ENTREGAS);
+
+            if (itemEmEdicaoEntrega !== null) {
+                // UPDATE
+                const index = entregas.findIndex(item => item.id === itemEmEdicaoEntrega);
+                if (index !== -1) {
+                    entregas[index] = {
+                        id: itemEmEdicaoEntrega,
+                        data: dataEl.value,
+                        cliente: nomeCliente, 
+                        quantidade: quantidade,
+                        valor: valorTotal
+                    };
+                    submitBtn.textContent = 'Registrar';
+                    itemEmEdicaoEntrega = null;
+                }
+            } else {
+                // CREATE
+                const novaEntrega = { 
+                    data: dataEl.value, 
+                    cliente: nomeCliente, 
+                    quantidade: quantidade, 
+                    valor: valorTotal, 
+                    id: Date.now() 
+                };
+                entregas.push(novaEntrega);
+            }
+            
+            salvarDados(KEY_ENTREGAS, entregas);
+            dataEl.value = new Date().toISOString().split('T')[0]; 
+            clienteEl.value = ''; 
+            qtdEl.value = '';
+            renderizarEntregas();
+        }
+        
+        function iniciarEdicaoEntrega(id) {
+            const entregas = carregarDados(KEY_ENTREGAS);
+            const item = entregas.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('entrega-data').value = item.data;
+            document.getElementById('entrega-cliente').value = item.cliente === 'N/A' ? '' : item.cliente; 
+            document.getElementById('entrega-quantidade').value = item.quantidade;
+            
+            itemEmEdicaoEntrega = id;
+            document.getElementById('entrega-submit-btn').textContent = 'Atualizar';
+            document.getElementById('entrega-data').focus();
+        }
+
+        function excluirEntrega(id) {
+            if (!confirm("Tem certeza que deseja excluir este registro de entrega?")) return;
+            let entregas = carregarDados(KEY_ENTREGAS);
+            entregas = entregas.filter(item => item.id !== id);
+            salvarDados(KEY_ENTREGAS, entregas);
+            renderizarEntregas();
+        }
+
+        function renderizarEntregas() {
+            const entregas = carregarDados(KEY_ENTREGAS);
+            const listEl = document.getElementById('entregas-list');
+            listEl.innerHTML = entregas.length === 0 ? '<p style="text-align: center; color: #999; padding: 10px;">Nenhuma entrega registrada ainda.</p>' : '';
+            entregas.sort((a, b) => new Date(b.data) - new Date(a.data)); 
+
+            entregas.forEach(item => {
+                const valorExibido = item.valor || (item.quantidade * VALOR_ENTREGA); 
+                
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <span class="item-data">${formatarData(item.data)} - ${item.cliente} (${item.quantidade} un.)</span>
+                    <span class="valor">${formatarMoeda(valorExibido)}</span>
+                    <div class="item-actions">
+                        <button class="btn-edit" onclick="iniciarEdicaoEntrega(${item.id})">Editar</button>
+                        <button class="btn-delete" onclick="excluirEntrega(${item.id})">Excluir</button>
+                    </div>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+        
+        // =======================================================
+        // ========== LÓGICA CRUD - PIX RECEBIDOS ================
+        // =======================================================
+
+        function adicionarPix() {
+            const dataEl = document.getElementById('pix-data');
+            const pagadorEl = document.getElementById('pix-pagador');
+            const valorEl = document.getElementById('pix-valor');
+            const submitBtn = document.getElementById('pix-submit-btn');
+
+            if (!dataEl.value || !valorEl.value || parseFloat(valorEl.value) <= 0 || !pagadorEl.value.trim()) {
+                alert("Preencha todos os campos obrigatórios.");
+                return;
+            }
+
+            const valor = parseFloat(valorEl.value);
+            let pix = carregarDados(KEY_PIX);
+            
+            if (itemEmEdicaoPix !== null) {
+                // UPDATE
+                const index = pix.findIndex(item => item.id === itemEmEdicaoPix);
+                if (index !== -1) {
+                    pix[index] = {
+                        id: itemEmEdicaoPix,
+                        data: dataEl.value,
+                        pagador: pagadorEl.value.trim(),
+                        valor: valor
+                    };
+                    submitBtn.textContent = 'Adicionar PIX';
+                    itemEmEdicaoPix = null;
+                }
+            } else {
+                // CREATE
+                const novoPix = { 
+                    data: dataEl.value, 
+                    pagador: pagadorEl.value.trim(), 
+                    valor: valor, 
+                    id: Date.now() 
+                };
+                pix.push(novoPix);
+            }
+
+            salvarDados(KEY_PIX, pix);
+            dataEl.value = new Date().toISOString().split('T')[0];
+            pagadorEl.value = ''; 
+            valorEl.value = '';
+            renderizarPix();
+        }
+        
+        function iniciarEdicaoPix(id) {
+            const pix = carregarDados(KEY_PIX);
+            const item = pix.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('pix-data').value = item.data;
+            document.getElementById('pix-pagador').value = item.pagador;
+            document.getElementById('pix-valor').value = item.valor;
+            
+            itemEmEdicaoPix = id;
+            document.getElementById('pix-submit-btn').textContent = 'Atualizar PIX';
+            document.getElementById('pix-data').focus();
+        }
+
+        function excluirPix(id) {
+            if (!confirm("Tem certeza que deseja excluir este registro de PIX?")) return;
+            let pix = carregarDados(KEY_PIX);
+            pix = pix.filter(item => item.id !== id);
+            salvarDados(KEY_PIX, pix);
+            renderizarPix();
+        }
+
+        function renderizarPix() {
+            const pix = carregarDados(KEY_PIX);
+            const listEl = document.getElementById('pix-list');
+            listEl.innerHTML = pix.length === 0 ? '<p style="text-align: center; color: #999; padding: 10px;">Nenhum PIX registrado ainda.</p>' : '';
+
+            pix.sort((a, b) => new Date(b.data) - new Date(a.data)); 
+
+            pix.forEach(item => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <span class="item-data">${formatarData(item.data)} - ${item.pagador}</span>
+                    <span class="valor pix">${formatarMoeda(item.valor)}</span>
+                    <div class="item-actions">
+                        <button class="btn-edit" onclick="iniciarEdicaoPix(${item.id})">Editar</button>
+                        <button class="btn-delete" onclick="excluirPix(${item.id})">Excluir</button>
+                    </div>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+
+        // =======================================================
+        // ========== RELATÓRIO E COMPARTILHAMENTO ===============
+        // =======================================================
+        
+        function gerarRelatorio() {
+            const entregas = carregarDados(KEY_ENTREGAS);
+            const pix = carregarDados(KEY_PIX);
+            
+            // SOMA TOTAL DE ENTREGAS: (R$20 * quantidade)
+            const entregasTotalValor = entregas.reduce((acc, item) => {
+                const valorCalculado = item.quantidade * VALOR_ENTREGA;
+                return acc + valorCalculado;
+            }, 0);
+            
+            // SOMA TOTAL DE PIX:
+            const pixTotalValor = pix.reduce((acc, item) => acc + item.valor, 0);
+            
+            // SUBTRAÇÃO:
+            const diferencaGlobal = entregasTotalValor - pixTotalValor;
+            
+            const diffClass = diferencaGlobal > 0.01 ? 'text-red' : diferencaGlobal < -0.01 ? 'text-green' : 'text-blue';
+            const statusText = diferencaGlobal > 0.01 ? 'PENDENTE' : diferencaGlobal < -0.01 ? 'SALDO A FAVOR' : 'QUITADO';
+
+            const outputEl = document.getElementById('report-output');
+            
+            // Estrutura HTML do Resumo
+            let htmlReport = `
+                <p><span>Soma Total Entregas (R$ ${VALOR_ENTREGA.toFixed(2)}/un):</span> <strong>${formatarMoeda(entregasTotalValor)}</strong></p>
+                <p><span>Soma Total PIX (R$):</span> <strong class="valor pix">${formatarMoeda(pixTotalValor)}</strong></p>
+                <p><span>Fórmula:</span> <strong>Entregas - PIX</strong></p>
+                
+                <p class="final-diff"><span>Diferença (${statusText}):</span> <strong class="${diffClass}">${formatarMoeda(Math.abs(diferencaGlobal))}</strong></p>
+                <p style="font-size: 0.9em; margin-top: 15px; color: #6c757d;">
+                    Este é o balanço global de todas as transações.
+                </p>
+            `;
+            
+            outputEl.innerHTML = htmlReport;
+        }
+
+        function copiarRelatorio() {
+            const entregas = carregarDados(KEY_ENTREGAS);
+            const pix = carregarDados(KEY_PIX);
+
+            const totalEntregasValor = entregas.reduce((acc, item) => acc + (item.quantidade * VALOR_ENTREGA), 0);
+            const totalPixRecebido = pix.reduce((acc, item) => acc + item.valor, 0);
+            const diferenca = totalEntregasValor - totalPixRecebido;
+            const statusText = diferenca > 0 ? 'PENDENTE' : diferenca < 0 ? 'SALDO A FAVOR' : 'QUITADO';
+            
+            const textReport = `
+*--- Relatório de Gestão Financeira ---*
+Data/Hora: ${new Date().toLocaleString('pt-BR')}
+
+Soma Total Entregas (R$ ${VALOR_ENTREGA.toFixed(2)}/un): ${formatarMoeda(totalEntregasValor)}
+Soma Total PIX: ${formatarMoeda(totalPixRecebido)}
+Fórmula: Entregas - PIX
+
+**Resultado da Comparação:**
+Diferença (Ajuste): ${formatarMoeda(diferenca)}
+Status: ${statusText}
+            `.trim();
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textReport)
+                    .then(() => {
+                        alert('Relatório copiado para a área de transferência! Cole no WhatsApp, Email, etc.');
+                    })
+                    .catch(() => {
+                        alert('Falha ao copiar. Tente selecionar o texto do relatório e copiar manualmente.');
+                    });
+            } else {
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = textReport;
+                document.body.appendChild(tempTextArea);
+                document.execCommand('copy');
+                document.body.removeChild(tempTextArea);
+                alert('Relatório copiado para a área de transferência!');
+            }
+        }
+
+        // --- Navegação por Abas e Inicialização ---
+        function setupTabs() {
+            const tabs = [
+                { id: 'tab-entregas-btn', contentId: 'tab-entregas' },
+                { id: 'tab-pix-btn', contentId: 'tab-pix' },
+                { id: 'tab-relatorio-btn', contentId: 'tab-relatorio' }
+            ];
+
+            tabs.forEach(tab => {
+                document.getElementById(tab.id).addEventListener('click', () => {
+                    tabs.forEach(t => {
+                        document.getElementById(t.id).classList.remove('active');
+                        document.getElementById(t.contentId).classList.remove('active');
+                    });
+                    
+                    document.getElementById(tab.id).classList.add('active');
+                    document.getElementById(tab.contentId).classList.add('active');
+                    
+                    if (tab.contentId === 'tab-relatorio') {
+                        gerarRelatorio();
+                    }
+                });
+            });
+        }
+        
+        function init() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('entrega-data').value = today;
+            document.getElementById('pix-data').value = today;
+            
+            setupTabs();
+            renderizarEntregas();
+            renderizarPix();
+        }
+
+        window.addEventListener('load', init);
+        
+        // 🛠️ Registro do Service Worker (Para PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => {
+                        console.log('Service Worker registrado com sucesso:', reg.scope);
+                    })
+                    .catch(err => {
+                        console.error('Falha no registro do Service Worker:', err);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
