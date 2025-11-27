@@ -307,7 +307,7 @@
             const submitBtn = document.getElementById('pix-submit-btn');
 
             if (!dataEl.value || !valorEl.value || parseFloat(valorEl.value) <= 0 || !pagadorEl.value.trim()) {
-                alert("Preencha todos os campos obrigatórios.");
+                alert("Preenchimento obrigatório: Data, Pagador e Valor.");
                 return;
             }
 
@@ -506,11 +506,11 @@ Status: ${statusText}
 
         window.addEventListener('load', init);
         
-        // 🛠️ Registro do Service Worker (Para PWA)
+        // 🛠️ REGISTRO DO SERVICE WORKER CORRIGIDO PARA CAMINHO RELATIVO
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // AQUI GARANTIMOS QUE O CAMINHO ESTÁ CORRETO
-                navigator.serviceWorker.register('/sw.js')
+                // USANDO './sw.js' PARA COMPATIBILIDADE COM DIVERSOS SERVIDORES (GitHub Pages)
+                navigator.serviceWorker.register('./sw.js') 
                     .then(reg => {
                         console.log('Service Worker registrado com sucesso:', reg.scope);
                     })
