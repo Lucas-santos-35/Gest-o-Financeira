@@ -1,11 +1,11 @@
 {
     "name": "Gestão Financeira Entregas",
     "short_name": "DeliveryFin",
-    "description": "App para gerenciar entregas e PIX.",
-    "start_url": "/",
+    "description": "App para gerenciar entregas e PIX com CRUD e relatórios.",
+    "start_url": "/index.html", 
     "display": "standalone",
     "background_color": "#ffffff",
-    "theme_color": "#0077c2",
+    "theme_color": "#1a237e",
     "icons": [
         {
             "src": "icon-192x192.png", 
