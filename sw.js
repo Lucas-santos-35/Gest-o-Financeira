@@ -1,9 +1,9 @@
-const CACHE_NAME = 'delivery-fin-v3'; // Versão atualizada do cache
+const CACHE_NAME = 'delivery-fin-v4'; // Versão atualizada do cache
 const urlsToCache = [
     '/',
     '/index.html',
     '/manifest.json'
-    // Se você estiver usando ícones, adicione os caminhos aqui
+    // Adicione os caminhos dos ícones se estiver usando, por exemplo:
     // '/icon-192x192.png',
     // '/icon-512x512.png'
 ];
@@ -22,20 +22,22 @@ self.addEventListener('install', event => {
     );
 });
 
-// 🌐 Fetch: Estratégia Cache-First
+// 🌐 Fetch: Estratégia Cache-First (Tenta o cache antes da rede)
 self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
             .then(response => {
+                // Retorna do cache se encontrado
                 if (response) {
                     return response;
                 }
+                // Tenta buscar na rede
                 return fetch(event.request);
             })
     );
 });
 
-// 🧹 Ativação: Limpa caches antigos
+// 🧹 Ativação: Limpa caches antigos (para garantir a versão mais recente)
 self.addEventListener('activate', event => {
     const cacheWhitelist = [CACHE_NAME];
     event.waitUntil(
